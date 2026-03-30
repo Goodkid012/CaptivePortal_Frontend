@@ -1,0 +1,79 @@
+name: Frontend CI - Develop
+
+on:
+  push:
+    branches: [ develop ]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ develop ]
+    paths:
+      - 'frontend/**'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      # Step 4.1: Checkout Code
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      # Step 4.2: Set Up Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: './frontend/.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: './frontend/package-lock.json'
+      
+      # Step 4.3: Cache Dependencies (additional caching)
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        id: node-modules-cache
+        with:
+          path: ./frontend/node_modules
+          key: ${{ runner.os }}-node-${{ hashFiles('./frontend/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
+      
+      # Step 4.4: Install Dependencies
+      - name: Install dependencies
+        run: npm ci
+      
+      # Step 4.5: Run Linter
+      - name: Run ESLint
+        run: npm run lint --if-present
+      
+      # Step 4.6: Run Tests
+      - name: Run tests
+        run: npm test --if-present -- --coverage --watchAll=false
+      
+      # Step 4.7: Build Application
+      - name: Build application
+        run: npm run build --if-present
+        env:
+          CI: true
+          REACT_APP_ENVIRONMENT: ci
+          REACT_APP_API_URL: http://localhost:8080
+      
+      # Step 4.8: Upload Build Artifact
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontend-build-develop
+          path: ./frontend/build/
+          retention-days: 7
+      
+      # Step 5: Notifications
+      - name: Send notification on failure
+        if: failure()
+        run: |
+          echo "::error::Frontend CI failed for commit ${{ github.sha }}"
+          # Add webhook notification here
