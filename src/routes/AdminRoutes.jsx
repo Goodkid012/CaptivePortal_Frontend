@@ -15,7 +15,7 @@ export default function AdminRoutes() {
     <Routes>
       <Route element={<AdminLayout />}>
         <Route path="/" element={<Dashboard />} />
-        <Route path="/users" element={<UserManagement />} />
+        {/* <Route path="/users" element={<UserManagement />} /> */}
         <Route path="/security" element={<Security />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/notifications" element={<AlertsDashboard />} />
